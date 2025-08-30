@@ -20,7 +20,8 @@ const ProfileSetupPage = () => {
         phone: "",
         address: "",
         nearest_mangrove: "",
-        avatar_url: ""
+        avatar_url: "",
+        auth_id:""
     });
 
     // Mangrove areas data
@@ -175,6 +176,7 @@ const ProfileSetupPage = () => {
 
     // Handle form submission - Updated to include email
     // Handle form submission - Updated to use upsert
+    // Handle form submission - Updated to work with RLS
     const handleSubmit = async () => {
         if (!validateStep()) return;
 
@@ -191,12 +193,14 @@ const ProfileSetupPage = () => {
                 .from('user')
                 .upsert(
                     {
+                        id: user.id, // important for RLS
                         email: user.email,
                         username: formData.username,
                         phone: parseInt(formData.phone),
                         address: formData.address,
                         nearest_mangrove: formData.nearest_mangrove,
-                        avatar_url: formData.avatar_url || null
+                        avatar_url: formData.avatar_url || null,
+                        auth_id: user.id
                     },
                     { onConflict: 'email' } // Use email as unique key for conflict resolution
                 );
@@ -213,6 +217,7 @@ const ProfileSetupPage = () => {
             setLoading(false);
         }
     };
+ 
 
 
     return (
@@ -463,8 +468,8 @@ const ProfileSetupPage = () => {
                     {/* Error/Success Messages */}
                     {message && (
                         <div className={`mt-4 p-4 rounded-lg text-sm ${message.includes('❌') ? 'bg-red-50 text-red-800' :
-                                message.includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
-                                    'bg-green-50 text-green-800'
+                            message.includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
+                                'bg-green-50 text-green-800'
                             }`}>
                             {message}
                         </div>
