@@ -7,9 +7,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex flex-col min-h-screen">
-        <Navbar/>
-        {/* Main Content */}
-        <main className="flex-grow">
+        {/* Navbar fixed at top */}
+        <Navbar />
+        
+        {/* Main Content - add padding to avoid overlap */}
+        <main className="flex-grow pt-16">
           {children}
         </main>
 
