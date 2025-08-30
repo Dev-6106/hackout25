@@ -594,10 +594,10 @@ export default function LeaderboardDashboard() {
             Every report you submit helps protect our mangroves. You're just {158} points away from reaching rank #{currentUser.rank - 1}!
           </p>
           <div className="flex justify-center gap-4">
-            <Link href="/submit-report" className="bg-white text-green-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+            <Link href="/reports" className="bg-white text-green-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
               Submit Report
             </Link>
-            <Link href="/achievements" className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white/10 transition">
+            <Link href="/dashboard" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white/10 transition">
               View All Badges
             </Link>
           </div>
