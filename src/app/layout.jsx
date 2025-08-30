@@ -1,15 +1,21 @@
-"use client"
+"use client";
+import Navbar from "../components/Navbar";
 import "./globals.css";
-
-export const metadata = {
-  title: "My App",
-  description: "Next.js + Tailwind Setup",
-};
+import Footer from "@/components/Footer";
 
 export default function RootLayout({ children }) {
   return (
-    <html>
-      <body className="bg-gray-950 text-white antialiased">{children}</body>
+    <html lang="en">
+      <body className="flex flex-col min-h-screen">
+        <Navbar/>
+        {/* Main Content */}
+        <main className="flex-grow">
+          {children}
+        </main>
+
+        {/* Footer */}
+        <Footer />
+      </body>
     </html>
   );
 }
