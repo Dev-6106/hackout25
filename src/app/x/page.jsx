@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import supabase from "../supabase-client";
 
-const FileUpload = () => {
+const page = () => {
     const [file, setFile] = useState(null)
     const [uploading, setUploading] = useState(false)
     const [fileUrl, setFileUrl] = useState("")
@@ -35,7 +35,8 @@ const FileUpload = () => {
 
             console.log(url.publicUrl)
 
-            setFileUrl(ur.publicUrl)
+            setFileUrl(url.publicUrl) // Fixed: was "ur.publicUrl"
+            alert("File uploaded successfully")
             alert("File uploaded successfully")
         } catch (error) {
             alert("Error uploading files", error.message)
@@ -62,4 +63,6 @@ const FileUpload = () => {
             )}
         </div>
     )
-}
+};
+
+export default page;
