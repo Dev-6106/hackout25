@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import supabase from "../supabase-client";
@@ -11,9 +11,8 @@ const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false); // For Sign In / Sign Up
-  const [resetLoading, setResetLoading] = useState(false); // For Forgot Password
+  const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   /** Check if user is already logged in */
@@ -21,7 +20,7 @@ const AuthPage = () => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data?.session) {
-        // router.push("/"); // Redirect to home if logged in
+        // router.push("/dashboard");
       }
     };
     checkSession();
@@ -52,11 +51,11 @@ const AuthPage = () => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: name } },
       });
 
       if (error) throw error;
-      setMessage("✅ Check your email to confirm your account!");
+
+      router.push("/check-email");
     } catch (err) {
       setMessage(`❌ ${err.message}`);
     } finally {
@@ -77,8 +76,8 @@ const AuthPage = () => {
       });
 
       if (error) throw error;
-      setMessage("✅ Logged in successfully!");
-      router.push("/");
+
+      router.push("/dashboard");
     } catch (err) {
       setMessage(`❌ ${err.message}`);
     } finally {
@@ -96,6 +95,8 @@ const AuthPage = () => {
     setMessage("");
 
     try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
 
       setMessage("📩 Check your email for the password reset link!");
     } catch (err) {
@@ -106,29 +107,28 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#022B3A] via-[#1B5E20] to-[#00BFA5] p-6">
       <div className="relative w-full max-w-4xl h-[600px] bg-white rounded-2xl shadow-2xl overflow-hidden">
+
         {/* Sign Up Form */}
         <div
           className={`absolute top-0 left-0 w-1/2 h-full flex flex-col items-center justify-center px-8 transition-all duration-700 ease-in-out ${
-            isSignUp
-              ? "translate-x-full opacity-100 z-50"
-              : "translate-x-0 opacity-0 z-10"
+            isSignUp ? "translate-x-full opacity-100 z-50" : "translate-x-0 opacity-0 z-10"
           }`}
         >
           <form
             onSubmit={handleSignUp}
             className="flex flex-col items-center w-full max-w-sm"
           >
-            <h1 className="text-3xl font-bold mb-8 text-gray-800">
+            <h1 className="text-3xl font-bold mb-8 text-[#1B5E20]">
               Create Account
             </h1>
 
-            {/* Google Sign-In */}
+            {/* Google Sign-Up */}
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center space-x-3 w-full justify-center border-2 border-gray-200 py-3 px-6 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-sm mb-6"
+              className="flex items-center space-x-3 w-full justify-center border-2 border-gray-200 py-3 px-6 rounded-lg hover:bg-[#E0F7FA] transition-all duration-200 shadow-sm mb-6"
             >
               <Image
                 src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -145,19 +145,6 @@ const AuthPage = () => {
               or use your email for registration
             </span>
 
-            {/* Name */}
-            <div className="relative w-full mb-4">
-              <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-gray-100 border-2 border-transparent outline-none focus:border-purple-400 focus:bg-white transition-all duration-200"
-                required
-              />
-            </div>
-
             {/* Email */}
             <div className="relative w-full mb-4">
               <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -166,7 +153,7 @@ const AuthPage = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-gray-100 border-2 border-transparent outline-none focus:border-purple-400 focus:bg-white transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-[#F5F5F5] border-2 border-transparent outline-none focus:border-[#00BFA5] focus:bg-white transition-all duration-200"
                 required
               />
             </div>
@@ -179,7 +166,7 @@ const AuthPage = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-gray-100 border-2 border-transparent outline-none focus:border-purple-400 focus:bg-white transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-[#F5F5F5] border-2 border-transparent outline-none focus:border-[#00BFA5] focus:bg-white transition-all duration-200"
                 required
               />
             </div>
@@ -187,7 +174,7 @@ const AuthPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-3 rounded-lg uppercase font-semibold tracking-wide transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
+              className="bg-gradient-to-r from-[#1B5E20] to-[#00BFA5] hover:from-[#166534] hover:to-[#00A78D] text-white px-12 py-3 rounded-lg uppercase font-semibold tracking-wide transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
             >
               {loading ? "Creating..." : "Sign Up"}
             </button>
@@ -201,22 +188,20 @@ const AuthPage = () => {
         {/* Sign In Form */}
         <div
           className={`absolute top-0 left-0 w-1/2 h-full flex flex-col items-center justify-center px-8 transition-all duration-700 ease-in-out ${
-            isSignUp
-              ? "translate-x-full opacity-0 z-10"
-              : "translate-x-0 opacity-100 z-50"
+            isSignUp ? "translate-x-full opacity-0 z-10" : "translate-x-0 opacity-100 z-50"
           }`}
         >
           <form
             onSubmit={handleSignIn}
             className="flex flex-col items-center w-full max-w-sm"
           >
-            <h1 className="text-3xl font-bold mb-8 text-gray-800">Sign In</h1>
+            <h1 className="text-3xl font-bold mb-8 text-[#1B5E20]">Sign In</h1>
 
             {/* Google Sign-In */}
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center space-x-3 w-full justify-center border-2 border-gray-200 py-3 px-6 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-sm mb-6"
+              className="flex items-center space-x-3 w-full justify-center border-2 border-gray-200 py-3 px-6 rounded-lg hover:bg-[#E0F7FA] transition-all duration-200 shadow-sm mb-6"
             >
               <Image
                 src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -241,7 +226,7 @@ const AuthPage = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-gray-100 border-2 border-transparent outline-none focus:border-purple-400 focus:bg-white transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-[#F5F5F5] border-2 border-transparent outline-none focus:border-[#00BFA5] focus:bg-white transition-all duration-200"
                 required
               />
             </div>
@@ -254,7 +239,7 @@ const AuthPage = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-gray-100 border-2 border-transparent outline-none focus:border-purple-400 focus:bg-white transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-700 bg-[#F5F5F5] border-2 border-transparent outline-none focus:border-[#00BFA5] focus:bg-white transition-all duration-200"
                 required
               />
             </div>
@@ -264,7 +249,7 @@ const AuthPage = () => {
               type="button"
               onClick={handleForgotPassword}
               disabled={resetLoading}
-              className="text-sm text-purple-600 hover:underline cursor-pointer mb-4"
+              className="text-sm text-[#00BFA5] hover:underline cursor-pointer mb-4"
             >
               {resetLoading ? "Sending..." : "Forgot Password?"}
             </button>
@@ -272,7 +257,7 @@ const AuthPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-12 py-3 rounded-lg uppercase font-semibold tracking-wide transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
+              className="bg-gradient-to-r from-[#1B5E20] to-[#00BFA5] hover:from-[#166534] hover:to-[#00A78D] text-white px-12 py-3 rounded-lg uppercase font-semibold tracking-wide transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>
@@ -285,7 +270,7 @@ const AuthPage = () => {
 
         {/* Toggle Panel */}
         <div
-          className={`absolute top-0 left-1/2 w-1/2 h-full bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 text-white flex transition-all duration-700 ease-in-out ${
+          className={`absolute top-0 left-1/2 w-1/2 h-full bg-gradient-to-br from-[#5C4033] via-[#4E342E] to-[#3E2723] text-white flex transition-all duration-700 ease-in-out ${
             isSignUp
               ? "-translate-x-full rounded-r-[30rem] rounded-l-none"
               : "translate-x-0 rounded-l-[30rem] rounded-r-none"
@@ -296,11 +281,11 @@ const AuthPage = () => {
               <div className="space-y-4">
                 <h1 className="text-4xl font-bold">Welcome Back!</h1>
                 <p className="text-lg opacity-90 leading-relaxed">
-                  Enter your personal details to use all site features
+                  Enter your credentials to sign in
                 </p>
                 <button
                   onClick={() => setIsSignUp(false)}
-                  className="border-2 border-white hover:bg-white hover:text-purple-600 text-white px-10 py-3 rounded-lg uppercase font-semibold tracking-wide mt-6 transition-all duration-200"
+                  className="border-2 border-white hover:bg-white hover:text-[#1B5E20] text-white px-10 py-3 rounded-lg uppercase font-semibold tracking-wide mt-6 transition-all duration-200"
                 >
                   Sign In
                 </button>
@@ -309,11 +294,11 @@ const AuthPage = () => {
               <div className="space-y-4">
                 <h1 className="text-4xl font-bold">Hello, Friend!</h1>
                 <p className="text-lg opacity-90 leading-relaxed">
-                  Register with your personal details to use all site features
+                  Sign up to create your account
                 </p>
                 <button
                   onClick={() => setIsSignUp(true)}
-                  className="border-2 border-white hover:bg-white hover:text-purple-600 text-white px-10 py-3 rounded-lg uppercase font-semibold tracking-wide mt-6 transition-all duration-200"
+                  className="border-2 border-white hover:bg-white hover:text-[#1B5E20] text-white px-10 py-3 rounded-lg uppercase font-semibold tracking-wide mt-6 transition-all duration-200"
                 >
                   Sign Up
                 </button>
