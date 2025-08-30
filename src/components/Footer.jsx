@@ -83,7 +83,7 @@ export default function Footer() {
         <div>
           <h3 className="text-xl font-semibold text-[#FFD580]">Contact Us</h3>
           <p className="mt-4 text-gray-300">
-            📍 Coastal Research Center, India  
+            🌊 Coastal Research Center, India  
             📞 +91 98765 43210  
             📧 support@mangrovemonitor.com
           </p>
