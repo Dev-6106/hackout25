@@ -9,7 +9,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function LeaderboardDashboard() {
-  const [timeFilter, setTimeFilter] = useState('all'); // all, month, week
   const [searchQuery, setSearchQuery] = useState('');
   const [userRank, setUserRank] = useState(null);
   
@@ -172,6 +171,11 @@ export default function LeaderboardDashboard() {
     }
   ]);
 
+  // Filter users based on search query
+  const filteredUsers = topUsers.filter(user => 
+    user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Calculate rank change
   const getRankChange = (current, previous) => {
     if (current === previous) return { icon: Minus, color: 'text-gray-400', change: 0 };
@@ -226,7 +230,7 @@ export default function LeaderboardDashboard() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">{currentUser.realName}</h2>
-                                    <div className="flex items-center space-x-2 mt-1">
+                  <div className="flex items-center space-x-2 mt-1">
                     <MapPin className="w-4 h-4 text-green-200" />
                     <span className="text-green-100">{currentUser.location}</span>
                   </div>
@@ -235,7 +239,7 @@ export default function LeaderboardDashboard() {
                       {getUserTitle(currentUser.verifiedReports).title}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
+                                   <div className="flex items-center space-x-2 mt-2">
                     {currentUser.rank < currentUser.previousRank ? (
                       <>
                         <TrendingUp className="w-5 h-5 text-green-300" />
@@ -296,53 +300,18 @@ export default function LeaderboardDashboard() {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search guardians..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setTimeFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                timeFilter === 'all' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All Time
-            </button>
-            <button
-              onClick={() => setTimeFilter('month')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                timeFilter === 'month' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setTimeFilter('week')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                timeFilter === 'week' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              This Week
-            </button>
+        <div className="flex justify-center">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search guardians..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
           </div>
         </div>
       </div>
@@ -385,7 +354,7 @@ export default function LeaderboardDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {topUsers.map((user) => {
+                {filteredUsers.map((user) => {
                   const rankChange = getRankChange(user.rank, user.previousRank);
                   const RankIcon = rankChange.icon;
                   const userTitle = getUserTitle(user.verifiedReports);
@@ -397,7 +366,7 @@ export default function LeaderboardDashboard() {
                           {user.rank === 1 && <Crown className="w-6 h-6 text-yellow-500 mr-2" />}
                           {user.rank === 2 && <Medal className="w-6 h-6 text-gray-400 mr-2" />}
                           {user.rank === 3 && <Medal className="w-6 h-6 text-orange-600 mr-2" />}
-                                                    <span className={`text-2xl font-bold ${
+                          <span className={`text-2xl font-bold ${
                             user.rank <= 3 ? 'text-gray-900' : 'text-gray-600'
                           }`}>
                             {user.rank}
@@ -444,7 +413,7 @@ export default function LeaderboardDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userTitle.color} ${
+                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userTitle.color} ${
                           userTitle.title === 'Verified Protector' ? 'bg-purple-100' :
                           userTitle.title === 'Mangrove Protector' ? 'bg-green-100' :
                           userTitle.title === 'Early Adopter' ? 'bg-blue-100' :
@@ -469,6 +438,13 @@ export default function LeaderboardDashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* Show message if no users found */}
+          {searchQuery && filteredUsers.length === 0 && (
+            <div className="p-8 text-center">
+              <p className="text-gray-500">No guardians found matching "{searchQuery}"</p>
+            </div>
+          )}
 
           {/* Show current user position if not in top 10 */}
           {currentUser.rank > 10 && (
@@ -595,7 +571,7 @@ export default function LeaderboardDashboard() {
                 <p className="text-sm text-gray-600 mb-2">Next Title:</p>
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">🛡️</span>
-                   <span className="font-medium text-gray-900">Verified Protector</span>
+                  <span className="font-medium text-gray-900">Verified Protector</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Reach 100 verified reports (38 more needed)</p>
               </div>
@@ -613,7 +589,7 @@ export default function LeaderboardDashboard() {
 
         {/* Motivational Section */}
         <div className="mt-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-8 text-white text-center">
-          <h3 className="text-2xl font-bold mb-3">Keep Climbing the Ranks!</h3>
+                    <h3 className="text-2xl font-bold mb-3">Keep Climbing the Ranks!</h3>
           <p className="text-green-100 max-w-2xl mx-auto mb-6">
             Every report you submit helps protect our mangroves. You're just {158} points away from reaching rank #{currentUser.rank - 1}!
           </p>
