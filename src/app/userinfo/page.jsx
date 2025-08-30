@@ -21,7 +21,7 @@ const ProfileSetupPage = () => {
         address: "",
         nearest_mangrove: "",
         avatar_url: "",
-        auth_id:""
+        auth_id: ""
     });
 
     // Mangrove areas data
@@ -74,12 +74,17 @@ const ProfileSetupPage = () => {
     // Check if user is authenticated and get email
     useEffect(() => {
         const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+                console.error("Error fetching session:", error);
+                router.push("/auth");
+                return;
+            }
             if (!session) {
                 router.push("/auth");
             } else {
-                // Store the user's email
-                setFormData(prev => ({ ...prev, email: session.user.email }));
+                const user = session.user;
+                setFormData(prev => ({ ...prev, email: user.email, auth_id: user.id }));
             }
         };
         checkAuth();
@@ -109,18 +114,16 @@ const ProfileSetupPage = () => {
             const fileName = `${user.id}_${Date.now()}.${fileExt}`;
             const filePath = `avatars/${fileName}`;
 
-            const { error: uploadError, data } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, file, { upsert: true });
 
             if (uploadError) throw uploadError;
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
+            // Get public URL (works for private bucket too)
+            const { data } = await supabase.storage.from('avatars').getPublicUrl(filePath);
 
-            setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+            setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
             setMessage("✅ Avatar uploaded successfully!");
         } catch (err) {
             setMessage(`❌ Error uploading avatar: ${err.message}`);
@@ -175,8 +178,6 @@ const ProfileSetupPage = () => {
     };
 
     // Handle form submission - Updated to include email
-    // Handle form submission - Updated to use upsert
-    // Handle form submission - Updated to work with RLS
     const handleSubmit = async () => {
         if (!validateStep()) return;
 
@@ -184,25 +185,23 @@ const ProfileSetupPage = () => {
         setMessage("");
 
         try {
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No user found");
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) throw new Error("No user found");
 
-            // Upsert user data (insert or update if email already exists)
             const { error } = await supabase
-                .from('user')
+                .from('users')
                 .upsert(
                     {
-                        id: user.id, // important for RLS
+                        id: user.id,
                         email: user.email,
                         username: formData.username,
-                        phone: parseInt(formData.phone),
+                        phone: formData.phone,
                         address: formData.address,
                         nearest_mangrove: formData.nearest_mangrove,
-                        avatar_url: formData.avatar_url || null,
+                        avatar_url: formData.avatar_url, // Ensure avatar_url is included
                         auth_id: user.id
                     },
-                    { onConflict: 'email' } // Use email as unique key for conflict resolution
+                    { onConflict: 'id' }
                 );
 
             if (error) throw error;
@@ -217,8 +216,6 @@ const ProfileSetupPage = () => {
             setLoading(false);
         }
     };
- 
-
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#022B3A] via-[#1B5E20] to-[#00BFA5] p-6">
