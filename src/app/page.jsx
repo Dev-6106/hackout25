@@ -1,13 +1,14 @@
-import React from 'react';
-import Footer from '../components/Footer';
-import Navbar from '../components/Navbar';
-import HeroSection from '../components/HeroSection';
+"use client";
+import React, { useState, useEffect } from 'react';
+import supabase from './supabase-client'
+import MangroveGuardMain from '@/components/MangroveGuardMain';
 
 const page = () => {
+  
   return (
-    <div>
-      
-    </div>
+    <>
+      <MangroveGuardMain />
+    </>
   );
 };
 
