@@ -15,6 +15,7 @@ const ProfileSetupPage = () => {
   const [fileUrl, setFileUrl] = useState("");
 
   // Upload to Supabase storage
+  // Upload to Supabase storage
   const handleUpload = async () => {
     try {
       setUploading(true);
@@ -22,17 +23,31 @@ const ProfileSetupPage = () => {
         throw new Error("File not provided");
       }
 
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("File size must be less than 5MB");
+      }
+
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
+      // ✅ Use correct bucket name everywhere (must match Supabase dashboard)
       const { error: uploadError } = await supabase.storage
-        .from("users")
-        .upload(filePath, file);
+        .from("avatars") // <-- Make sure this bucket exists
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
+      // ✅ Get the public URL from the SAME bucket
+      const { data, error: urlError } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      if (urlError) throw urlError;
 
       setFileUrl(data.publicUrl);
       return data.publicUrl;
@@ -43,6 +58,7 @@ const ProfileSetupPage = () => {
       setUploading(false);
     }
   };
+
 
   // Form data
   const [formData, setFormData] = useState({
@@ -94,15 +110,34 @@ const ProfileSetupPage = () => {
   const validateStep = () => {
     switch (step) {
       case 1:
-        if (!formData.username.trim()) return setMessage("⚠️ Please enter a username"), false;
-        if (formData.username.length < 3) return setMessage("⚠️ Username must be at least 3 characters"), false;
+        if (!formData.username.trim()) {
+          setMessage("⚠️ Please enter a username");
+          return false;
+        }
+        if (formData.username.length < 3) {
+          setMessage("⚠️ Username must be at least 3 characters");
+          return false;
+        }
         break;
       case 2:
-        if (!/^[0-9]{10}$/.test(formData.phone)) return setMessage("⚠️ Enter a valid 10-digit phone number"), false;
+        // Fixed: Remove any non-digit characters before validation
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        if (!/^[0-9]{10}$/.test(cleanPhone)) {
+          setMessage("⚠️ Enter a valid 10-digit phone number");
+          return false;
+        }
+        // Update formData with cleaned phone number
+        setFormData(prev => ({ ...prev, phone: cleanPhone }));
         break;
       case 3:
-        if (!formData.address.trim()) return setMessage("⚠️ Enter your address"), false;
-        if (!formData.mangrove_zone) return setMessage("⚠️ Select your nearest mangrove"), false;
+        if (!formData.address.trim()) {
+          setMessage("⚠️ Enter your address");
+          return false;
+        }
+        if (!formData.mangrove_zone) {
+          setMessage("⚠️ Select your nearest mangrove");
+          return false;
+        }
         break;
     }
     setMessage("");
@@ -121,13 +156,23 @@ const ProfileSetupPage = () => {
     setMessage("");
 
     try {
-      let avatarUrl = fileUrl;
+      // Fixed: Better handling of avatar upload
+      let avatarUrl = formData.avatar_url || "";
+
       if (file && !fileUrl) {
         avatarUrl = await handleUpload();
+        if (!avatarUrl) {
+          // Upload failed, error message already set by handleUpload
+          setLoading(false);
+          return;
+        }
+      } else if (fileUrl) {
+        avatarUrl = fileUrl;
       }
 
+      // Re-check authentication before submitting
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error("No user found");
+      if (userError || !user) throw new Error("No user found. Please log in again.");
 
       const { error } = await supabase.from("users").upsert(
         {
@@ -159,6 +204,25 @@ const ProfileSetupPage = () => {
     return area ? area.label : value;
   };
 
+  // Handle file selection with validation
+  const handleFileSelect = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Validate file type
+      if (!selectedFile.type.startsWith('image/')) {
+        setMessage("⚠️ Please select an image file");
+        return;
+      }
+      // Validate file size (5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setMessage("⚠️ File size must be less than 5MB");
+        return;
+      }
+      setFile(selectedFile);
+      setMessage("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#022B3A] via-[#1B5E20] to-[#00BFA5] p-6">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -181,7 +245,7 @@ const ProfileSetupPage = () => {
                   value={formData.username}
                   onChange={handleInputChange}
                   placeholder="Enter username"
-                  className="w-full px-3 py-2 rounded-lg border"
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
@@ -190,7 +254,7 @@ const ProfileSetupPage = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setFile(e.target.files[0])}
+                  onChange={handleFileSelect}
                   className="w-full"
                 />
                 {file && (
@@ -214,7 +278,7 @@ const ProfileSetupPage = () => {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="9876543210"
-                className="w-full px-3 py-2 rounded-lg border"
+                className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           )}
@@ -228,7 +292,8 @@ const ProfileSetupPage = () => {
                 value={formData.address}
                 onChange={handleInputChange}
                 rows="3"
-                className="w-full px-3 py-2 rounded-lg border"
+                placeholder="Enter your address"
+                className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500"
               />
 
               <label className="block text-sm font-medium mt-4 mb-2">Nearest Mangrove *</label>
@@ -236,7 +301,7 @@ const ProfileSetupPage = () => {
                 name="mangrove_zone"
                 value={formData.mangrove_zone}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 rounded-lg border"
+                className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Select nearest mangrove</option>
                 {Object.entries(groupedMangroves).map(([state, areas]) => (
@@ -255,26 +320,45 @@ const ProfileSetupPage = () => {
           {/* Step 4 - Review */}
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-xl mb-2">Review Your Information</h2>
-              <p><b>Email:</b> {formData.email}</p>
-              <p><b>Username:</b> {formData.username}</p>
-              <p><b>Phone:</b> {formData.phone}</p>
-              <p><b>Address:</b> {formData.address}</p>
-              <p><b>Mangrove:</b> {getMangroveLabel(formData.mangrove_zone)}</p>
+              <h2 className="text-xl font-semibold mb-4">Review Your Information</h2>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <p><span className="font-medium">Email:</span> {formData.email}</p>
+                <p><span className="font-medium">Username:</span> {formData.username}</p>
+                <p><span className="font-medium">Phone:</span> {formData.phone}</p>
+                <p><span className="font-medium">Address:</span> {formData.address}</p>
+                <p><span className="font-medium">Mangrove:</span> {getMangroveLabel(formData.mangrove_zone)}</p>
+              </div>
               {file && (
-                <img src={URL.createObjectURL(file)} className="w-24 h-24 rounded-full mt-2" />
+                <div className="mt-4">
+                  <p className="font-medium mb-2">Profile Picture:</p>
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="Profile preview"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-green-500"
+                  />
+                </div>
               )}
             </div>
           )}
 
+          {/* Progress indicator */}
+          <div className="flex justify-center mt-6 mb-4 space-x-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className={`h-2 w-8 rounded-full transition-colors ${i <= step ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+              />
+            ))}
+          </div>
+
           {/* Messages */}
           {message && (
             <div
-              className={`mt-4 p-3 rounded ${
-                message.includes("❌") ? "bg-red-100 text-red-700"
-                : message.includes("⚠️") ? "bg-yellow-100 text-yellow-700"
-                : "bg-green-100 text-green-700"
-              }`}
+              className={`mt-4 p-3 rounded-lg flex items-center ${message.includes("❌") ? "bg-red-100 text-red-700 border border-red-300"
+                  : message.includes("⚠️") ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                    : "bg-green-100 text-green-700 border border-green-300"
+                }`}
             >
               {message}
             </div>
@@ -283,19 +367,30 @@ const ProfileSetupPage = () => {
           {/* NAVIGATION */}
           <div className="flex justify-between mt-6">
             {step > 1 && (
-              <button onClick={() => setStep(step - 1)} className="px-4 py-2 border rounded">
+              <button
+                onClick={() => setStep(step - 1)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 Back
               </button>
             )}
             {step < 4 ? (
-              <button onClick={handleNext} className="ml-auto bg-green-600 text-white px-6 py-2 rounded">
+              <button
+                onClick={handleNext}
+                className="ml-auto bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
                 Next
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading} className="ml-auto bg-green-600 text-white px-6 py-2 rounded">
-                {loading ? (
+              <button
+                onClick={handleSubmit}
+                disabled={loading || uploading}
+                className="ml-auto bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                {loading || uploading ? (
                   <span className="flex items-center">
-                    <Loader2 className="mr-2 w-4 h-4 animate-spin" /> Saving...
+                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                    {uploading ? "Uploading..." : "Saving..."}
                   </span>
                 ) : (
                   <span className="flex items-center">

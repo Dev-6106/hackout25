@@ -1,17 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Trophy, Medal, Award, TrendingUp, TrendingDown, Minus,
   Crown, Star, Users, MapPin, TreePine, Camera,
   ChevronUp, ChevronDown, Search, Filter, Calendar, Target
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import supabase from "../supabase-client";
 
 export default function LeaderboardDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userRank, setUserRank] = useState(null);
-  
+
   // Function to get title based on verified reports
   const getUserTitle = (verifiedReports) => {
     if (verifiedReports >= 100) return { title: 'Verified Protector', color: 'text-purple-600' };
@@ -19,7 +20,38 @@ export default function LeaderboardDashboard() {
     if (verifiedReports >= 10) return { title: 'Early Adopter', color: 'text-blue-600' };
     return { title: 'New Guardian', color: 'text-gray-600' };
   };
-  
+
+
+  const getUser = async () => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error("Error fetching user:", error.message);
+      return null;
+    }
+
+    return user; // Contains id, email, etc.
+  };
+
+  const getUserProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from("users") // your table name
+      .select("*")
+      .eq("id", userId) // or "auth_id" if that's your column name
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error.message);
+      return null;
+    }
+
+    return data;
+  };
+
+
   // Current logged-in user data
   const currentUser = {
     id: 'current',
@@ -172,7 +204,7 @@ export default function LeaderboardDashboard() {
   ]);
 
   // Filter users based on search query
-  const filteredUsers = topUsers.filter(user => 
+  const filteredUsers = topUsers.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -218,18 +250,21 @@ export default function LeaderboardDashboard() {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Image
-                    src={currentUser.avatar}
+                    src={
+                      "https://uibqxvcoxrpxilrjhmon.supabase.co/storage/v1/object/public/avatars/1756571324559.jpg"
+                    }
                     alt={currentUser.realName}
                     width={80}
                     height={80}
-                    className="rounded-full border-4 border-white/50"
+                    className="w-20 h-20 rounded-full border-4 border-white/50 object-cover"
                   />
+
                   <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-white text-sm font-bold rounded-full w-8 h-8 flex items-center justify-center">
                     {currentUser.rank}
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{currentUser.realName}</h2>
+                  <h2 className="text-2xl font-bold">{"dskjbhfd"}</h2>
                   <div className="flex items-center space-x-2 mt-1">
                     <MapPin className="w-4 h-4 text-green-200" />
                     <span className="text-green-100">{currentUser.location}</span>
@@ -239,7 +274,7 @@ export default function LeaderboardDashboard() {
                       {getUserTitle(currentUser.verifiedReports).title}
                     </span>
                   </div>
-                                   <div className="flex items-center space-x-2 mt-2">
+                  <div className="flex items-center space-x-2 mt-2">
                     {currentUser.rank < currentUser.previousRank ? (
                       <>
                         <TrendingUp className="w-5 h-5 text-green-300" />
@@ -366,9 +401,8 @@ export default function LeaderboardDashboard() {
                           {user.rank === 1 && <Crown className="w-6 h-6 text-yellow-500 mr-2" />}
                           {user.rank === 2 && <Medal className="w-6 h-6 text-gray-400 mr-2" />}
                           {user.rank === 3 && <Medal className="w-6 h-6 text-orange-600 mr-2" />}
-                          <span className={`text-2xl font-bold ${
-                            user.rank <= 3 ? 'text-gray-900' : 'text-gray-600'
-                          }`}>
+                          <span className={`text-2xl font-bold ${user.rank <= 3 ? 'text-gray-900' : 'text-gray-600'
+                            }`}>
                             {user.rank}
                           </span>
                         </div>
@@ -376,7 +410,7 @@ export default function LeaderboardDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Image
-                            src={user.avatar}
+                            src={"/3135715.png"}
                             alt={user.name}
                             width={48}
                             height={48}
@@ -413,12 +447,11 @@ export default function LeaderboardDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userTitle.color} ${
-                          userTitle.title === 'Verified Protector' ? 'bg-purple-100' :
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userTitle.color} ${userTitle.title === 'Verified Protector' ? 'bg-purple-100' :
                           userTitle.title === 'Mangrove Protector' ? 'bg-green-100' :
-                          userTitle.title === 'Early Adopter' ? 'bg-blue-100' :
-                          'bg-gray-100'
-                        }`}>
+                            userTitle.title === 'Early Adopter' ? 'bg-blue-100' :
+                              'bg-gray-100'
+                          }`}>
                           {userTitle.title}
                         </span>
                       </td>
@@ -479,12 +512,11 @@ export default function LeaderboardDashboard() {
                     <p className="text-xs text-gray-500">Reports</p>
                   </div>
                   <div className="text-center">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getUserTitle(currentUser.verifiedReports).color} ${
-                      getUserTitle(currentUser.verifiedReports).title === 'Verified Protector' ? 'bg-purple-100' :
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getUserTitle(currentUser.verifiedReports).color} ${getUserTitle(currentUser.verifiedReports).title === 'Verified Protector' ? 'bg-purple-100' :
                       getUserTitle(currentUser.verifiedReports).title === 'Mangrove Protector' ? 'bg-green-100' :
-                      getUserTitle(currentUser.verifiedReports).title === 'Early Adopter' ? 'bg-blue-100' :
-                      'bg-gray-100'
-                    }`}>
+                        getUserTitle(currentUser.verifiedReports).title === 'Early Adopter' ? 'bg-blue-100' :
+                          'bg-gray-100'
+                      }`}>
                       {getUserTitle(currentUser.verifiedReports).title}
                     </span>
                   </div>
@@ -561,7 +593,7 @@ export default function LeaderboardDashboard() {
                   <span className="text-sm font-medium">158 pts needed</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500"
                     style={{ width: '76%' }}
                   />
@@ -589,7 +621,7 @@ export default function LeaderboardDashboard() {
 
         {/* Motivational Section */}
         <div className="mt-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-8 text-white text-center">
-                    <h3 className="text-2xl font-bold mb-3">Keep Climbing the Ranks!</h3>
+          <h3 className="text-2xl font-bold mb-3">Keep Climbing the Ranks!</h3>
           <p className="text-green-100 max-w-2xl mx-auto mb-6">
             Every report you submit helps protect our mangroves. You're just {158} points away from reaching rank #{currentUser.rank - 1}!
           </p>
